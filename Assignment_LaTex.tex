@@ -1,0 +1,258 @@
+\documentclass{article}
+% make four margins to be 1 inch
+\usepackage{fullpage}
+% use UTF8 encoding
+\usepackage[utf8]{inputenc}
+% use KoTeX package for Korean 
+\usepackage{kotex}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ }
+ \usepackage{graphicx}
+ \usepackage{titling}
+
+ \title{3D 터레인 생성 및 물체의 상호작용에 대한 보고서}
+\author{(6조) 김 진 혁\textsuperscript{조장} , 남 태 승, 박 윤 상}
+\date{March 2023}
+ 
+ \usepackage{fancyhdr}
+\fancypagestyle{plain}{%  the preset of fancyhdr 
+    \fancyhf{} % clear all header and footer fields
+    \fancyfoot[R]{\includegraphics[width=2cm]{R.png}}
+    \fancyfoot[L]{\thedate}
+    \fancyhead[L]{안동대학교 컴퓨터공학과 2023 그래픽스}
+    \fancyhead[R]{\theauthor}
+}
+\makeatletter
+\def\@maketitle{%
+  \newpage
+  \null
+  \vskip 1em%
+  \begin{center}%
+  \let \footnote \thanks
+    {\LARGE \@title \par}%
+    \vskip 1em%
+    %{\large \@date}%
+  \end{center}%
+  \par
+  \vskip 1em}
+\makeatother
+
+\usepackage{lipsum}  
+\usepackage{cmbright}
+
+\begin{document}
+
+\maketitle
+
+\noindent\begin{tabular}{@{}ll}
+    학생 & \theauthor\\
+     교수 &  심 재 창\\
+     학과 & 안동대학교 컴퓨터공학과\\
+     e-mail & kjh030529@gmail.com\\
+\end{tabular}
+
+\vspace{30pt}
+
+\begin{center}
+\subsection*{요약}
+\end{center}
+본 보고서는 p5.js에서 퍼린노이즈를 활용하여 일치하는 UV의 색상값에따라 버텍스 높이를 조절하는 방식으로 3D터레인을 생성하고 마우스의 좌표에 따라 이동하는 구체를 생성함으로써 Vertex와 노이즈 및 전반적인 3D 그래픽스에 대한 이해를 위해 작성되었다.
+
+\vspace{20pt}
+
+
+\section{서론}
+본 보고서에서는 p5.js에서 퍼린 노이즈를 사용하여 터레인을 생성하는 방법을 소개한다. 우선 퍼린 노이즈의 개념과 작동 방식에 대해 설명한 후, 이를 활용하여 다양하고 동적인 터레인을 만들어내는 방법을 소개한다.
+
+\subsection*{\textbf{\textit{본 보고서는 OpenAI의 GPT3.0모델을 사용한 ChatGPT 서비스를 이용하여 LaTex 문법과 Overleaf에디터, p5.js의 문법에 대해 공부하여 작성하였다.
+또한 퍼린 노이즈와 버텍스의 정보 조사는 ChatGPT를 통해 조사한 자료를 바탕으로 Bing검색엔진을 이용해 검증한 후 작성하는 형태로 진행되었다.}
+}}
+\vspace{20pt}
+\section{퍼린 노이즈}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.05]{noiseEx.png}
+    \caption{퍼린 노이즈}
+    \label{fig:perlin1}
+\end{figure}
+퍼린 노이즈(Perlin noise)는 1983년에 Ken Perlin이 영화 '트론'을 제작중 컴퓨터 그래픽을 위한 단계적 질감 생성을 위해 개발한 그라데이션 노이즈의 한 종류로, 자연스러운 질감과 패턴을 만들어내기 위해 컴퓨터 그래픽과 절차적 콘텐츠 생성에서 널리 사용되고있다.
+
+퍼린 노이즈의 기본 아이디어는 무작위로 방향이 정해진 벡터의 그리드를 생성하고, 이를 보간하여 부드럽고 연속적인 표면을 만드는 것이다. 이러한 노이즈 함수는 지형 등 다양한 자연스러운 패턴과 질감을 만들어내는 데 사용될 수 있다.
+
+\section{버텍스}
+
+버텍스는 그래픽스에서 가장 기본적인 개념 중 하나이다. 그래픽스에서의 모든 3D 모델은 버텍스들의 집합으로 이루어져 있다. 각 버텍스는 3차원 공간상의 한 점을 나타내며, 이 점은 3차원 좌표계 상에서 $(x, y, z)$로 표현된다.
+
+버텍스는 또한 모델의 다양한 속성을 포함할 수 있다. 예를 들어, 색상, UV, 법선 벡터 등의 정보를 가질 수 있다. 이러한 정보들은 모델을 입체적으로 렌더링하는 데 사용된다.
+
+일반적으로 여러개의 버텍스 집합을 사용해서 삼각형 형태의 면을 표현한다. 이는 모델을 표현할 때 가장 일반적으로 사용되는 방법 중 하나이다.
+
+\section{구현}
+    \subsection{터레인 생성}
+    p5.js에서 퍼린 노이즈를 사용하여 터레인을 생성하려면 2D 그리드의 퍼린 노이즈 값을 생성하고, 이를 이용하여 높이 맵을 생성한다.
+    아래는 이를 구현한 코드이다.
+    
+    \vspace{30pt}
+    \begin{lstlisting}[language=Octave]
+      for (var y = 0; y < rows; y++) {
+        var xoff = 0, yoff = 0; //Terrain Scroll Speed
+        for (var x = 0; x < cols; x++) {
+          terrain[x][y] = map(noise(xoff, yoff), 0, 1, -50, 50);
+          xoff += 0.2;
+        }
+        yoff += 0.2;
+      }
+    \end{lstlisting}
+    그런 다음 삼각형의 메시를 생성하고 일정 각도를 기울이고 화면 중심으로 이동시킨다. 그리고 높이 맵을 사용하여 터레인의 각 지점의 높이를 지정하여 렌더링한다.
+
+    \begin{lstlisting}[language=Octave]
+      translate(0, 50);
+      rotateX(PI / 3);
+      translate(-w / 2, -h / 2);
+      for (let y = 0; y < rows - 1; y++) {
+        beginShape(TRIANGLE_STRIP);
+        for (let x = 0; x < cols; x++) {
+          let v = terrain[x][y];
+          vertex(x * scl, y * scl, terrain[x][y]);
+          vertex(x * scl, (y + 1) * scl, terrain[x][y + 1]);
+        }
+        endShape();
+      }
+    \end{lstlisting}
+    위 코드를 작성하여 실행하면 아래와 같은 화면을 볼 수 있다.
+    
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[scale=0.4]{1.jpg}
+        \caption{터레인 생성}
+        \label{fig:terrain1}
+    \end{figure}
+
+    \vspace{120pt}
+
+    이제 터레인의 fill(int, int, int) 함수를 활용하여 높이에 따른 그라데이션 형식의 색을 면에 채운후 noStroke() 함수로 터레인의 선을 제거한다.
+
+    이후 마우스의 화면상의 좌표에 따라 터레인 위를 움직이는 구체에 대한 코드를 작성한다.
+    아래 코드에서는 구체의 입체적인 가시성을 위해 normalMaterial()함수를 사용하여 3D 구체의 법선 값을 색상으로 표현하였다.
+    \begin{lstlisting}[language=Octave]
+      push(); translate(w / 2, h / 2);
+      translate(mouseX - width / 2, (mouseY - height / 2) * 6);
+      rotate(PI / 5);
+      normalMaterial(); pop();
+    \end{lstlisting}
+
+    위 코드를 사용하면 아래 보기와 같이 마우스 좌표에 따라 이동하는 구체가 생성된다.
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[scale=0.6]{2.jpg}
+        \caption{구체 생성}
+        \label{fig:sphere1}
+    \end{figure}
+    
+    \vspace{40pt}
+    위의 코드를 모두 종합한 코드와 보기는 아래와 같다.
+    
+    \begin{lstlisting}[language=Octave]
+        let cols, rows;
+        let scl = 20;
+        let w = 1400;
+        let h = 1000;
+        
+        let flying = 0;
+        
+        let terrain = [];
+        
+        function setup() {
+          
+          createCanvas(600, 600, WEBGL);
+          cols = w / scl;
+          rows = h / scl;
+          noStroke();
+        
+          for (var x = 0; x < cols; x++) {
+            terrain[x] = [];
+            for (var y = 0; y < rows; y++) {
+              terrain[x][y] = 0; //specify a default value for now
+            }
+          }
+        }
+        function draw() {
+          
+          flying -= 0.1;
+          let yoff = flying;
+          for (var y = 0; y < rows; y++) {
+            var xoff = 0;
+            for (var x = 0; x < cols; x++) {
+              terrain[x][y] = map(noise(xoff, yoff), 0, 1, -50, 50);
+              xoff += 0.2;
+            }
+            yoff += 0.2;
+          }
+        
+        
+          background(150,200,255);
+          translate(0, 50);
+          rotateX(PI / 3);
+          fill(200, 200, 200, 150);
+          translate(-w / 2, -h / 2);
+          for (let y = 0; y < rows - 1; y++) {
+            beginShape(TRIANGLE_STRIP);
+            for (let x = 0; x < cols; x++) {
+              let v = terrain[x][y];
+              fill(50 - (v+50)/100 * 50, (v+50)/100 * 255, 80 - (v+50)/100 * 80)
+              vertex(x * scl, y * scl, terrain[x][y]);
+              vertex(x * scl, (y + 1) * scl, terrain[x][y + 1]);
+            }
+            endShape();
+          }
+          push(); translate(w / 2, h / 2);
+          translate(mouseX - width / 2, (mouseY - height / 2) * 6);
+          rotate(PI / 5);
+          normalMaterial();
+          sphere(100); pop();
+        }
+    \end{lstlisting}
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[scale=0.6]{3.jpg}
+        \caption{결과}
+        \label{fig:result}
+    \end{figure}
+    
+\section{결론 및 기대}
+p5.js에서 퍼린 노이즈를 사용하여 터레인을 생성하는 방법을 활용하여 움직이는 터레인을 만들어내는 실습을 진행하였다. 이를 활용하여 다양한 그래픽 작업에서 유용하게 활용할 수 있을것으로 기대한다. p5.js에서는 이외에도 다양한 그래픽 기능을 제공하므로, 다양한 창의적 작업을 수행할 수 있을것으로 기대한다.
+\end{document}
